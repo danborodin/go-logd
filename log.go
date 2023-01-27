@@ -34,19 +34,28 @@ func (l *Logger) Close() error {
 	return nil
 }
 
-func (l *Logger) InfoPrintln(msg ...interface{}) error {
+func (l *Logger) InfoPrintln(msg ...interface{}) {
 	l.l.SetPrefix(fmt.Sprintf("%s ", LINFO))
-	return l.l.Output(2, fmt.Sprintln(msg...))
+	err := l.l.Output(2, fmt.Sprintln(msg...))
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
-func (l *Logger) WarnPrintln(msg ...interface{}) error {
+func (l *Logger) WarnPrintln(msg ...interface{}) {
 	l.l.SetPrefix(fmt.Sprintf("%s ", LWARN))
-	return l.l.Output(2, fmt.Sprintln(msg...))
+	err := l.l.Output(2, fmt.Sprintln(msg...))
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
-func (l *Logger) ErrPrintln(msg ...interface{}) error {
+func (l *Logger) ErrPrintln(msg ...interface{}) {
 	l.l.SetPrefix(fmt.Sprintf("%s ", LERR))
-	return l.l.Output(2, fmt.Sprintln(msg...))
+	err := l.l.Output(2, fmt.Sprintln(msg...))
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func (l *Logger) Fatal(msg ...interface{}) {
