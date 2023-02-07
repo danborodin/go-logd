@@ -27,9 +27,9 @@ func NewLogger(out io.Writer, flag int) *Logger {
 }
 
 func (l *Logger) Close() error {
-	file, ok := l.out.(*os.File)
+	out, ok := l.out.(io.Closer)
 	if ok {
-		return file.Close()
+		return out.Close()
 	}
 	return nil
 }
