@@ -3,26 +3,23 @@ package logd
 import (
 	"fmt"
 	"io"
-	"log"
 	"os"
-)
-
-const (
-	LINFO  = "INFO"
-	LWARN  = "WARNING"
-	LERR   = "ERROR"
-	LFATAL = "FATAL"
+	"sync"
 )
 
 type Logger struct {
-	l   *log.Logger
-	out io.Writer
+	mu   sync.Mutex
+	buf  []byte
+	out  io.Writer
+	fail func(msg ...interface{})
 }
 
-func NewLogger(out io.Writer, flag int) *Logger {
+func NewLogger(out io.Writer, f func(...interface{})) *Logger {
 	return &Logger{
-		l:   log.New(out, "", flag),
-		out: out,
+		mu:   sync.Mutex{},
+		buf:  make([]byte, 1<<10),
+		out:  out,
+		fail: f,
 	}
 }
 
@@ -34,32 +31,41 @@ func (l *Logger) Close() error {
 	return nil
 }
 
-func (l *Logger) InfoPrintln(msg ...interface{}) {
-	l.l.SetPrefix(fmt.Sprintf("%s ", LINFO))
-	err := l.l.Output(2, fmt.Sprintln(msg...))
-	if err != nil {
-		log.Fatal(err)
-	}
+func (l *Logger) InfoPrintln(v ...interface{}) {
+	l.mu.Lock()
+	l.buf = append(l.buf, []byte("INFO: "+fmt.Sprint(v...)+"\n")...)
+	l.mu.Unlock()
+	l.write()
 }
 
-func (l *Logger) WarnPrintln(msg ...interface{}) {
-	l.l.SetPrefix(fmt.Sprintf("%s ", LWARN))
-	err := l.l.Output(2, fmt.Sprintln(msg...))
-	if err != nil {
-		log.Fatal(err)
-	}
+func (l *Logger) WarnPrintln(v ...interface{}) {
+	l.mu.Lock()
+	l.buf = append(l.buf, []byte("WARNING: "+fmt.Sprint(v...)+"\n")...)
+	l.mu.Unlock()
+	l.write()
 }
 
-func (l *Logger) ErrPrintln(msg ...interface{}) {
-	l.l.SetPrefix(fmt.Sprintf("%s ", LERR))
-	err := l.l.Output(2, fmt.Sprintln(msg...))
-	if err != nil {
-		log.Fatal(err)
-	}
+func (l *Logger) ErrPrintln(v ...interface{}) {
+	l.mu.Lock()
+	l.buf = append(l.buf, []byte("ERROR: "+fmt.Sprint(v...)+"\n")...)
+	l.mu.Unlock()
+	l.write()
 }
 
-func (l *Logger) Fatal(msg ...interface{}) {
-	l.l.SetPrefix(fmt.Sprintf("%s ", LFATAL))
-	l.l.Output(2, fmt.Sprintln(msg...))
+func (l *Logger) Fatal(v ...interface{}) {
+	l.mu.Lock()
+	l.buf = append(l.buf, []byte("FATAL: "+fmt.Sprint(v...)+"\n")...)
+	l.mu.Unlock()
+	l.write()
 	os.Exit(1)
+}
+
+func (l *Logger) write() {
+	l.mu.Lock()
+	_, err := l.out.Write(l.buf)
+	l.buf = l.buf[:0]
+	l.mu.Unlock()
+	if err != nil {
+		l.fail(err)
+	}
 }
