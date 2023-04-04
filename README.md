@@ -1,1 +1,1 @@
-# go-logd is an extremely simple logger written in go
+# logd is a zero allocation, extremely simple logger written in go
