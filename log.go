@@ -15,14 +15,16 @@ const (
 )
 
 type Logger struct {
-	l   *log.Logger
-	out io.Writer
+	l    *log.Logger
+	out  io.Writer
+	fail func(msg ...interface{})
 }
 
-func NewLogger(out io.Writer, flag int) *Logger {
+func NewLogger(out io.Writer, f func(...interface{}), flag int) *Logger {
 	return &Logger{
-		l:   log.New(out, "", flag),
-		out: out,
+		l:    log.New(out, "", flag),
+		out:  out,
+		fail: f,
 	}
 }
 
@@ -35,31 +37,31 @@ func (l *Logger) Close() error {
 }
 
 func (l *Logger) InfoPrintln(msg ...interface{}) {
-	l.l.SetPrefix(fmt.Sprintf("%s ", LINFO))
+	l.l.SetPrefix(fmt.Sprintf("%s: ", LINFO))
 	err := l.l.Output(2, fmt.Sprintln(msg...))
 	if err != nil {
-		log.Fatal(err)
+		l.fail(err)
 	}
 }
 
 func (l *Logger) WarnPrintln(msg ...interface{}) {
-	l.l.SetPrefix(fmt.Sprintf("%s ", LWARN))
+	l.l.SetPrefix(fmt.Sprintf("%s: ", LWARN))
 	err := l.l.Output(2, fmt.Sprintln(msg...))
 	if err != nil {
-		log.Fatal(err)
+		l.fail(err)
 	}
 }
 
 func (l *Logger) ErrPrintln(msg ...interface{}) {
-	l.l.SetPrefix(fmt.Sprintf("%s ", LERR))
+	l.l.SetPrefix(fmt.Sprintf("%s: ", LERR))
 	err := l.l.Output(2, fmt.Sprintln(msg...))
 	if err != nil {
-		log.Fatal(err)
+		l.fail(err)
 	}
 }
 
 func (l *Logger) Fatal(msg ...interface{}) {
-	l.l.SetPrefix(fmt.Sprintf("%s ", LFATAL))
+	l.l.SetPrefix(fmt.Sprintf("%s: ", LFATAL))
 	l.l.Output(2, fmt.Sprintln(msg...))
 	os.Exit(1)
 }
